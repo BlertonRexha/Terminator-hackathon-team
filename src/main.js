@@ -3,6 +3,12 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import './assets/styles/index.css'
+import axios from './axios'
+import VueDOMPurifyHTML from 'vue-dompurify-html';
+
+Vue.use(VueDOMPurifyHTML);
+
+Vue.prototype.$axios = axios
 
 Vue.config.productionTip = false
 

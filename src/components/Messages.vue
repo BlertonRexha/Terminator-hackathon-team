@@ -14,7 +14,7 @@
         "
       >
         <div class="w-full text-left">
-          {{ message.body }}
+          <div v-dompurify-html="message.body"></div>
           <div class="image-container">
             <div v-for="file in message.files" class="image-box">
               <img :src="file.blob" alt="" />
@@ -43,6 +43,13 @@
           :show-rating="false"
           @rating-selected="setRating"
         />
+      </div>
+      <div
+        v-if="messages.length > 2"
+        class="underline cursor-pointer"
+        @click="$emit('resetChat')"
+      >
+        Reset Chat
       </div>
     </div>
   </div>
@@ -89,7 +96,7 @@ export default {
     position: relative;
     max-width: 96%;
 
-    >div {
+    > div {
       word-break: break-word;
     }
     &::after {
@@ -110,7 +117,7 @@ export default {
       right: -0.45em;
       border-top-color: inherit;
     }
-    
+
     .image-container {
       display: flex;
       flex-wrap: wrap;
@@ -118,7 +125,7 @@ export default {
         display: inline-block;
         width: 100px;
         height: 100px;
-        margin: 0 .5rem 0.5rem 0;
+        margin: 0 0.5rem 0.5rem 0;
         img {
           width: 100%;
           height: 100%;

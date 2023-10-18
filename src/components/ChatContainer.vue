@@ -14,7 +14,11 @@
         </div>
       </div>
 
-      <messages :messages="messages" :show-typing="showTyping" />
+      <messages
+        :messages="messages"
+        :show-typing="showTyping"
+        @resetChat="resetChat"
+      />
       <div class="inset-x-0 bottom-0 bg-gray-200">
         <div
           class="max-w-screen-lg m-auto w-full p-4 flex space-x-4 justify-center items-center"
@@ -54,7 +58,10 @@
         >
           <span v-for="(image, filesIndex) in files" :key="filesIndex">
             {{ image.path }}
-            <img src="@/assets/close-circle.svg" @click="files.splice(filesIndex, 1)" />
+            <img
+              src="@/assets/close-circle.svg"
+              @click="files.splice(filesIndex, 1)"
+            />
           </span>
         </div>
       </div>
@@ -63,9 +70,9 @@
 </template>
 
 <script>
-const baseUrl = 'http://localhost:8000/chats/'
+const baseUrl = "http://localhost:8000/chats/";
 import Messages from "@/components/Messages.vue";
-import axios from "axios";
+// import axios from "axios";
 export default {
   name: "ChatContainer",
   components: {
@@ -103,19 +110,22 @@ export default {
     },
     getMessages(id) {
       this.showTyping = true;
-      axios
+      this.$axios
         .get(`${baseUrl}${id}`)
         .then((res) => {
-          this.messages = this.messages.concat(res.data.chatMessages.map(({role, message}) => {
-            return {
-              role: role,
-              body: message,
-            };
-          }));
+          this.messages = this.messages.concat(
+            res.data.chatMessages.map(({ role, message }) => {
+              return {
+                role: role,
+                body: message,
+              };
+            })
+          );
         })
         .catch((err) => {
           console.log(err);
-        }).finally(() => {
+        })
+        .finally(() => {
           this.showTyping = false;
         });
     },
@@ -133,7 +143,7 @@ export default {
     },
     async askQuestion(question) {
       this.showTyping = true;
-      if(!this.chatId) {
+      if (!this.chatId) {
         await this.createChat(question);
       } else {
         await this.sendMessageToChat(question);
@@ -142,46 +152,75 @@ export default {
       this.scrollToBottom();
     },
     async createChat(question) {
-      const chatInitiatedApi = await axios.post(
-        baseUrl,
-        {
-          message: question,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "allow-access-control-origin": "*",
+      try {
+        const chatInitiatedApi = await this.$axios.post(
+          baseUrl,
+          {
+            message: question,
           },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "allow-access-control-origin": "*",
+            },
+          }
+        );
+        this.chatId = chatInitiatedApi.data.id_chat;
+        this.$router.push({ params: { chatId: this.chatId } });
+        this.messages.push({
+          role: "assistant",
+          body: chatInitiatedApi.data.chat_answer,
+        });
+      } catch (err) {
+        if (err?.response?.data?.length) {
+          this.messages.push({
+            role: "assistant",
+            body: err.response.data[0],
+          });
         }
-      );
-      this.chatId = chatInitiatedApi.data.id_chat;
-      this.$router.push({ params: { chatId: this.chatId } })
-      this.messages.push({
-        role: "assistant",
-        body: chatInitiatedApi.data.chat_answer,
-      });
+      }
     },
     async sendMessageToChat(question) {
-      const chatResApi = await axios.post(
-        `${baseUrl}${this.chatId}/messages`,
-        {
-          message: question,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "allow-access-control-origin": "*",
+      try {
+        const chatResApi = await this.$axios.post(
+          `${baseUrl}${this.chatId}/messages`,
+          {
+            message: question,
           },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "allow-access-control-origin": "*",
+            },
+          }
+        );
+        this.messages.push({
+          role: "assistant",
+          body: chatResApi.data.response,
+        });
+      } catch (err) {
+        if (err?.response?.data?.length) {
+          this.messages.push({
+            role: "assistant",
+            body: err.response.data[0],
+          });
         }
-      );
-      this.messages.push({
-        role: "assistant",
-        body: chatResApi.data.response,
-      });
+        console.log(err);
+      }
     },
     scrollToBottom() {
       const messagesContainer = this.$el.querySelector(".messages-conatiner");
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    },
+    resetChat() {
+      this.messages = [
+        {
+          role: "assistant",
+          body: "Hello! How can I assist you today?",
+        },
+      ];
+      this.chatId = null;
+      this.$router.push({ params: { chatId: null } });
     },
   },
 };
