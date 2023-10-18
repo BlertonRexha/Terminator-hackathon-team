@@ -1,6 +1,6 @@
 <template>
   <div
-    class="messages-conatiner relative w-full max-w-screen-lg flex-1 m-auto p-8 my-4 pb-20"
+    class="messages-conatiner relative w-full max-w-screen-lg flex-1 m-auto p-8 my-4"
   >
     <div class="flex flex-col">
       <div
@@ -88,6 +88,10 @@ export default {
   .message {
     position: relative;
     max-width: 96%;
+
+    >div {
+      word-break: break-word;
+    }
     &::after {
       content: "";
       top: 0;

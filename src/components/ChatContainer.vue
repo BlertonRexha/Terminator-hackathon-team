@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full home">
+  <div class="h-full">
     <div class="h-full bg-gray-50 flex flex-col" x-data="chat">
       <div class="relative">
         <div class="flex justify-center p-4" style="background-color: #e30010">
@@ -54,7 +54,7 @@
         >
           <span v-for="(image, filesIndex) in files" :key="filesIndex">
             {{ image.path }}
-            <img src="@/assets/close-circle.svg" />
+            <img src="@/assets/close-circle.svg" @click="files.splice(filesIndex, 1)" />
           </span>
         </div>
       </div>
@@ -63,10 +63,11 @@
 </template>
 
 <script>
+const baseUrl = 'http://localhost:8000/chats/'
 import Messages from "@/components/Messages.vue";
 import axios from "axios";
 export default {
-  name: "HomeView",
+  name: "ChatContainer",
   components: {
     Messages,
   },
@@ -75,7 +76,7 @@ export default {
       messages: [
         {
           role: "assistant",
-          body: "Hello, how can I help you?",
+          body: "Hello! How can I assist you today?",
         },
       ],
       newMessage: "",
@@ -83,6 +84,12 @@ export default {
       files: [],
       chatId: null,
     };
+  },
+  beforeMount() {
+    if (this.$route.params.chatId) {
+      this.chatId = this.$route.params.chatId;
+      this.getMessages(this.chatId);
+    }
   },
   methods: {
     fileEvent(event) {
@@ -93,6 +100,24 @@ export default {
           path: file.name,
         });
       }
+    },
+    getMessages(id) {
+      this.showTyping = true;
+      axios
+        .get(`${baseUrl}${id}`)
+        .then((res) => {
+          this.messages = this.messages.concat(res.data.chatMessages.map(({role, message}) => {
+            return {
+              role: role,
+              body: message,
+            };
+          }));
+        })
+        .catch((err) => {
+          console.log(err);
+        }).finally(() => {
+          this.showTyping = false;
+        });
     },
     sendMessage() {
       if (!this.newMessage) return;
@@ -109,23 +134,36 @@ export default {
     async askQuestion(question) {
       this.showTyping = true;
       if(!this.chatId) {
-        const chatInitiatedApi = await axios.post(
-          "http://localhost:8000/chats/",
-          {
-            message: question,
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        await this.createChat(question);
+      } else {
+        await this.sendMessageToChat(question);
       }
-      console.log(chatInitiatedApi);
-      this.chatId = chatInitiatedApi.id_chat;
-      if(!this.chatId) return
+      this.showTyping = false;
+      this.scrollToBottom();
+    },
+    async createChat(question) {
+      const chatInitiatedApi = await axios.post(
+        baseUrl,
+        {
+          message: question,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "allow-access-control-origin": "*",
+          },
+        }
+      );
+      this.chatId = chatInitiatedApi.data.id_chat;
+      this.$router.push({ params: { chatId: this.chatId } })
+      this.messages.push({
+        role: "assistant",
+        body: chatInitiatedApi.data.chat_answer,
+      });
+    },
+    async sendMessageToChat(question) {
       const chatResApi = await axios.post(
-        `http://localhost:8000/chats/${this.chatId}/messages`,
+        `${baseUrl}${this.chatId}/messages`,
         {
           message: question,
         },
@@ -138,7 +176,7 @@ export default {
       );
       this.messages.push({
         role: "assistant",
-        body: chatResApi.response,
+        body: chatResApi.data.response,
       });
     },
     scrollToBottom() {
@@ -196,15 +234,17 @@ export default {
 }
 
 .message-file {
+  margin-bottom: 3px;
   span {
     padding: 2px;
     background: #ccc;
     border-radius: 3px;
-    max-width: 201px;
+    max-width: 200px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     position: relative;
+    padding-right: 20px;
     img {
       position: absolute;
       top: 2px;

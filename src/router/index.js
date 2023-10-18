@@ -5,7 +5,12 @@ Vue.use(VueRouter)
 
 const routes = [
   {
-    path: '/',
+    path: '*',
+    name: 'chat',
+    redirect: { name: 'main-view' }
+  },
+  ,{
+    path: '/chat/:chatId',
     name: 'main-view',
     component: () => import('../views/MainView.vue')
   }
