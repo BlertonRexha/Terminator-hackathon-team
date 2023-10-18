@@ -54,7 +54,7 @@
         >
           <span v-for="(image, filesIndex) in files" :key="filesIndex">
             {{ image.path }}
-            <img src="@/assets/close-circle.svg">
+            <img src="@/assets/close-circle.svg" />
           </span>
         </div>
       </div>
@@ -64,6 +64,7 @@
 
 <script>
 import Messages from "@/components/Messages.vue";
+import axios from "axios";
 export default {
   name: "HomeView",
   components: {
@@ -80,6 +81,7 @@ export default {
       newMessage: "",
       showTyping: false,
       files: [],
+      chatId: null,
     };
   },
   methods: {
@@ -104,16 +106,40 @@ export default {
       this.files = [];
       this.scrollToBottom();
     },
-    askQuestion(question) {
+    async askQuestion(question) {
       this.showTyping = true;
-      setTimeout(() => {
-        this.messages.push({
-          role: "assistant",
-          body: "I don't know the answer to that question.",
-        });
-        this.scrollToBottom();
-        this.showTyping = false;
-      }, 800);
+      if(!this.chatId) {
+        const chatInitiatedApi = await axios.post(
+          "http://localhost:8000/chats/",
+          {
+            message: question,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+      console.log(chatInitiatedApi);
+      this.chatId = chatInitiatedApi.id_chat;
+      if(!this.chatId) return
+      const chatResApi = await axios.post(
+        `http://localhost:8000/chats/${this.chatId}/messages`,
+        {
+          message: question,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "allow-access-control-origin": "*",
+          },
+        }
+      );
+      this.messages.push({
+        role: "assistant",
+        body: chatResApi.response,
+      });
     },
     scrollToBottom() {
       const messagesContainer = this.$el.querySelector(".messages-conatiner");
@@ -186,7 +212,6 @@ export default {
       cursor: pointer;
       height: 25px;
       width: 25px;
-
     }
   }
 }
