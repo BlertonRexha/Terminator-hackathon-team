@@ -6,8 +6,8 @@ Vue.use(VueRouter)
 const routes = [
   {
     path: '/',
-    name: 'chat-container',
-    component: () => import('../views/ChatContainer.vue')
+    name: 'main-view',
+    component: () => import('../views/MainView.vue')
   }
 ]
 

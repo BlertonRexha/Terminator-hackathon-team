@@ -1,8 +1,21 @@
 <template>
   <div id="app">
     <router-view/>
+    <chat-modal-container />
   </div>
 </template>
+
+<script>
+
+import ChatModalContainer from "@/components/ChatModalContainer.vue";
+export default {
+  name: "App",
+  components: {
+    ChatModalContainer,
+  },
+};
+
+</script>
 
 <style lang="scss">
 #app {
